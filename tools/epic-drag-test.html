@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Epic Drag Test — what does a drag deliver?</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0; background: #f6f7f9; color: #1c2430; }
+  header { padding: 16px 24px; background: #16203a; color: #fff; }
+  header h1 { margin: 0 0 4px; font-size: 1.15rem; }
+  header p { margin: 0; font-size: 0.85rem; color: #aeb8cc; }
+  .wrap { padding: 20px 24px; max-width: 1000px; margin: 0 auto; }
+  #zone {
+    border: 3px dashed #9aa4b2; border-radius: 14px; background: #fff;
+    padding: 56px 24px; text-align: center; transition: all .12s;
+  }
+  #zone.hot { border-color: #2f6df6; background: #eef3ff; }
+  #zone h2 { margin: 0 0 6px; }
+  #zone p { margin: 0; color: #6b7585; }
+  .events { font-size: .8rem; color: #6b7585; margin: 10px 0 0; }
+  .events span { display: inline-block; min-width: 92px; }
+  .events b { color: #1a7f4b; }
+  .controls { margin: 16px 0; }
+  button { font: inherit; padding: 8px 14px; border: 1px solid #d9dde3; border-radius: 8px;
+    background: #fff; cursor: pointer; margin-right: 8px; }
+  pre { background: #0f1320; color: #d6e0f0; padding: 16px; border-radius: 12px;
+    overflow: auto; font-size: .82rem; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+  .hint { background: #fffbe9; border: 1px solid #f0e2a8; border-radius: 10px; padding: 12px 16px; font-size: .9rem; }
+  code { background: #eef1f6; padding: 1px 5px; border-radius: 4px; font-size: .85em; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Epic Drag Test</h1>
+  <p>Drag an email out of Epic and drop it in the box. This page reports exactly what the drag delivered — it does not upload or save anything.</p>
+</header>
+
+<div class="wrap">
+  <div class="hint">
+    Open this page in the <b>same Chrome</b> where the EML Viewer extension would run, position it next to Epic, then drag an email onto the box below. If the box never highlights when you drag over it, that itself is a key result (see notes at the bottom of the log).
+  </div>
+
+  <div id="zone">
+    <h2>⬇ Drop an Epic email here</h2>
+    <p>(or drag a normal <code>.eml</code> file here first to see what a working drag looks like)</p>
+    <p class="events">
+      <span>dragenter: <b id="c-enter">0</b></span>
+      <span>dragover: <b id="c-over">0</b></span>
+      <span>drop: <b id="c-drop">0</b></span>
+    </p>
+  </div>
+
+  <div class="controls">
+    <button id="clear">Clear log</button>
+    <button id="copy">Copy log</button>
+  </div>
+
+  <pre id="log">No drop yet. Waiting…</pre>
+</div>
+
+<script>
+const logEl = document.getElementById('log');
+const zone = document.getElementById('zone');
+const counts = { enter: 0, over: 0, drop: 0 };
+let buffer = '';
+
+function out(line = '') {
+  buffer += line + '\n';
+  logEl.textContent = buffer;
+}
+function bump(kind) {
+  counts[kind]++;
+  document.getElementById('c-' + kind).textContent = counts[kind];
+}
+
+// Must preventDefault on dragover for a drop to be allowed at all.
+['dragenter', 'dragover'].forEach((t) =>
+  zone.addEventListener(t, (e) => {
+    e.preventDefault();
+    if (t === 'dragenter') bump('enter');
+    if (t === 'dragover') bump('over');
+    zone.classList.add('hot');
+  })
+);
+zone.addEventListener('dragleave', () => zone.classList.remove('hot'));
+
+zone.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  zone.classList.remove('hot');
+  bump('drop');
+
+  const dt = e.dataTransfer;
+  buffer = '';
+  out('===== DROP at ' + new Date().toLocaleTimeString() + ' =====');
+  out('dropEffect: ' + dt.dropEffect + '   effectAllowed: ' + dt.effectAllowed);
+  out('');
+
+  // 1) Advertised formats
+  out('dataTransfer.types: ' + JSON.stringify(Array.from(dt.types || [])));
+  out('');
+
+  // 2) Files
+  out('--- FILES (dataTransfer.files: ' + dt.files.length + ') ---');
+  if (dt.files.length === 0) out('(none)');
+  for (const f of dt.files) {
+    out(`  • name="${f.name}"  type="${f.type || '(empty)'}"  size=${f.size} bytes  lastModified=${f.lastModified}`);
+    try {
+      const head = await f.slice(0, 400).text();
+      out('    first 400 chars:');
+      out('    ' + head.replace(/\n/g, '\n    '));
+    } catch (err) { out('    (could not read file: ' + err.message + ')'); }
+  }
+  out('');
+
+  // 3) Items (covers strings AND files, gives kind + entry info)
+  const items = dt.items ? Array.from(dt.items) : [];
+  out('--- ITEMS (dataTransfer.items: ' + items.length + ') ---');
+  if (items.length === 0) out('(none)');
+  const stringReads = [];
+  items.forEach((it, i) => {
+    let entryName = '';
+    try {
+      const entry = it.webkitGetAsEntry && it.webkitGetAsEntry();
+      if (entry) entryName = `  entry.name="${entry.name}" isFile=${entry.isFile} isDirectory=${entry.isDirectory}`;
+    } catch (_) {}
+    out(`  [${i}] kind="${it.kind}"  type="${it.type || '(empty)'}"${entryName}`);
+    if (it.kind === 'string') {
+      const type = it.type;
+      stringReads.push(new Promise((res) => it.getAsString((s) => {
+        out(`    string(${type}) length=${s.length}:`);
+        out('    ' + String(s).slice(0, 600).replace(/\n/g, '\n    '));
+        res();
+      })));
+    }
+  });
+  await Promise.all(stringReads);
+  out('');
+
+  // 4) Common named formats via getData
+  out('--- getData() for common formats ---');
+  for (const fmt of ['text/plain', 'text/html', 'text/uri-list', 'URL', 'text/rtf', 'application/x-moz-file', 'text/x-moz-url']) {
+    let v = '';
+    try { v = dt.getData(fmt); } catch (_) {}
+    if (v) out(`  ${fmt} (${v.length} chars): ${v.slice(0, 300).replace(/\n/g, ' ')}`);
+  }
+  out('');
+
+  // 5) Verdict hints
+  out('--- WHAT THIS MEANS ---');
+  if (dt.files.length > 0) {
+    out('✓ A FILE came through. The extension can already ingest this on drop.');
+  } else if ((dt.types || []).includes('text/html')) {
+    out('• No file, but HTML content came through. We can render dropped HTML directly');
+    out('  (sanitize + display), bypassing .eml parsing.');
+  } else if ((dt.types || []).includes('text/plain')) {
+    out('• Only plain text came through. If it is raw .eml text we can parse it;');
+    out('  if it is just the visible message text, rendering will be limited.');
+  } else {
+    out('✗ Nothing usable came through. If the drop counter is 0 or types is empty,');
+    out('  this is almost certainly a Citrix/VDI virtualization boundary blocking the');
+    out('  drag. Drag-and-drop will NOT work; we will need a different ingestion path.');
+  }
+});
+
+document.getElementById('clear').addEventListener('click', () => { buffer = ''; out('Cleared. Waiting…'); });
+document.getElementById('copy').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(buffer); } catch (_) {}
+});
+</script>
+</body>
+</html>

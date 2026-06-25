@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Email — PlatformEQ EML Viewer</title>
+    <link rel="stylesheet" href="../../styles/shared.css" />
+    <link rel="stylesheet" href="./viewer.css" />
+  </head>
+  <body>
+    <main class="viewer">
+      <div class="toolbar">
+        <span class="toolbar__brand">EML Viewer</span>
+        <button id="open-another" type="button" class="toolbar__btn">Open another file</button>
+      </div>
+
+      <header id="meta" class="meta" hidden>
+        <h1 id="meta-subject" class="meta__subject"></h1>
+        <dl class="meta__fields">
+          <div class="meta__row"><dt>From</dt><dd id="meta-from"></dd></div>
+          <div class="meta__row"><dt>To</dt><dd id="meta-to"></dd></div>
+          <div class="meta__row meta__row--cc" hidden><dt>Cc</dt><dd id="meta-cc"></dd></div>
+          <div class="meta__row"><dt>Date</dt><dd id="meta-date"></dd></div>
+        </dl>
+      </header>
+
+      <div id="error" class="status" data-kind="error" hidden></div>
+
+      <section id="attachments" class="attachments" hidden>
+        <h2 class="attachments__title">Attachments (<span id="att-count">0</span>)</h2>
+        <ul id="att-list" class="att-list"></ul>
+      </section>
+
+      <!--
+        Email body isolation boundary.
+        - no `allow-scripts`     => JavaScript in the email cannot run
+        - no `allow-same-origin` => opaque origin, no cookies/storage/extension reach
+        - allow-popups(+escape)  => legitimate links can open in a real new tab
+        Content is injected via srcdoc with its own restrictive CSP meta tag.
+      -->
+      <iframe
+        id="email-body"
+        class="email-body"
+        sandbox="allow-popups allow-popups-to-escape-sandbox"
+        title="Email body"
+        hidden
+      ></iframe>
+    </main>
+
+    <script type="module" src="./viewer.js"></script>
+  </body>
+</html>

@@ -1,0 +1,123 @@
+.viewer {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.toolbar__brand {
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.toolbar__btn {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  cursor: pointer;
+}
+.toolbar__btn:hover { border-color: var(--accent); background: #eef3ff; }
+
+.meta {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.meta__subject {
+  margin: 0 0 12px;
+  font-size: 1.35rem;
+}
+.meta__fields {
+  margin: 0;
+  display: grid;
+  gap: 2px;
+}
+.meta__row {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 12px;
+  font-size: 0.92rem;
+}
+.meta__row dt {
+  color: var(--muted);
+  font-weight: 600;
+}
+.meta__row dd {
+  margin: 0;
+  word-break: break-word;
+}
+
+.email-body {
+  flex: 1 1 auto;
+  width: 100%;
+  border: 0;
+  background: var(--surface);
+}
+
+.status {
+  padding: 16px 24px;
+}
+
+.attachments {
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.attachments__title {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.att-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.att-list__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  min-width: 160px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+.att-list__item:hover,
+.att-list__item:focus-visible {
+  border-color: var(--accent);
+  background: #eef3ff;
+  outline: none;
+}
+.att-list__name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  word-break: break-word;
+}
+.att-list__meta {
+  font-size: 0.78rem;
+  color: var(--muted);
+}

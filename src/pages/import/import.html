@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Import EML — PlatformEQ EML Viewer</title>
+    <link rel="stylesheet" href="../../styles/shared.css" />
+    <link rel="stylesheet" href="./import.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="page__header">
+        <h1>EML Viewer</h1>
+        <p class="muted">Drop a <code>.eml</code> file to open it. Everything stays on this machine.</p>
+      </header>
+
+      <section
+        id="dropzone"
+        class="dropzone"
+        tabindex="0"
+        role="button"
+        aria-label="Drop an .eml file here or click to choose a file"
+      >
+        <div class="dropzone__inner">
+          <p class="dropzone__title">Drop <code>.eml</code> here</p>
+          <p class="muted">or click to choose a file</p>
+        </div>
+        <input id="file-input" type="file" accept=".eml,.txt,.mht,.mhtml,message/rfc822" hidden />
+      </section>
+
+      <div class="statusbar">
+        <span id="spinner" class="spinner" hidden aria-hidden="true"></span>
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+      </div>
+
+      <p class="import__footer">
+        <a id="telemetry-debug-link" class="import__debug-link" href="#">Open telemetry debug</a>
+      </p>
+    </main>
+
+    <script type="module" src="./import.js"></script>
+  </body>
+</html>

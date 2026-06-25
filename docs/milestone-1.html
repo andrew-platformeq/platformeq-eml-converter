@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Milestone 1 — EML Viewer</title>
+<style>
+  @page { margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1c2430; line-height: 1.55; font-size: 11.5pt; margin: 0;
+  }
+  h1 { font-size: 23pt; margin: 0 0 2px; color: #16203a; }
+  .sub { color: #6b7585; margin: 0 0 22px; font-size: 11pt; }
+  h2 { font-size: 15pt; margin: 26px 0 8px; color: #16203a;
+       border-bottom: 2px solid #e6e9ef; padding-bottom: 4px; }
+  h3 { font-size: 12pt; margin: 16px 0 4px; }
+  p { margin: 0 0 10px; }
+  code { font-family: ui-monospace, Menlo, Consolas, monospace;
+         font-size: 9.8pt; background: #eef1f6; padding: 1px 4px; border-radius: 4px; }
+  .plain { background: #f0f6ff; border: 1px solid #cfe0ff; border-radius: 10px;
+           padding: 14px 18px; margin: 14px 0; }
+  .plain h2 { border: 0; margin-top: 0; color: #1d4ed8; }
+  ul { margin: 4px 0 12px; padding-left: 20px; }
+  li { margin: 3px 0; }
+  .tag { display: inline-block; background: #1a7f4b; color: #fff; font-size: 9pt;
+         padding: 2px 9px; border-radius: 999px; vertical-align: middle; }
+  .file { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 9.6pt; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 10pt; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #e6e9ef; vertical-align: top; }
+  th { color: #6b7585; font-weight: 600; }
+  .check { background: #fffbe9; border: 1px solid #f0e2a8; border-radius: 10px; padding: 14px 18px; margin: 14px 0; }
+  .footer { margin-top: 28px; color: #9aa4b2; font-size: 9pt; border-top: 1px solid #e6e9ef; padding-top: 8px; }
+</style>
+</head>
+<body>
+
+<h1>Milestone 1 &nbsp;<span class="tag">DONE</span></h1>
+<p class="sub">EML Viewer Chrome Extension · Scaffold + File Ingestion + Parsing</p>
+
+<div class="plain">
+  <h2>In plain English</h2>
+  <p>We built the <strong>skeleton of the extension</strong> and got the single hardest "does this even work" question answered: <em>can we take a <code>.eml</code> email file, open it, and pull out the real contents?</em> The answer is yes.</p>
+  <p>Right now the extension gives you a page where you <strong>drop an email file</strong>, and it shows you what's inside it — who it's from, the subject, the date, whether it has an HTML body, and how many attachments it has. It doesn't <em>display</em> the email nicely yet (that's the next milestone). Think of this milestone as <strong>"the plumbing is connected and water comes out."</strong></p>
+</div>
+
+<h2>What an "extension" even is (quick grounding)</h2>
+<p>A Chrome extension is just a bundle of web files (HTML, CSS, JavaScript) plus a <span class="file">manifest.json</span> — a settings file that tells Chrome "here's my name, my icon, what I'm allowed to do, and what happens when someone clicks my toolbar button." Our manifest says: when clicked, open our import page; the only permission we ask for is <code>storage</code> (to remember emails locally); and we explicitly ask for <strong>no internet access at all</strong>.</p>
+
+<h2>What we actually built this milestone</h2>
+<table>
+  <tr><th>Piece</th><th>What it does</th></tr>
+  <tr><td class="file">manifest.json</td><td>The extension's ID card and permission list (storage only, no network).</td></tr>
+  <tr><td class="file">service-worker.js</td><td>The tiny always-available script that opens the import page when you click the toolbar icon.</td></tr>
+  <tr><td class="file">import page</td><td>The drag-and-drop / file-picker screen where you load an <code>.eml</code> file. Currently shows a debug panel of what was parsed.</td></tr>
+  <tr><td class="file">parse-eml.js</td><td>The wrapper around <code>postal-mime</code>, the library that does the heavy lifting of decoding the raw email format.</td></tr>
+  <tr><td class="file">viewer / attachment pages</td><td>Placeholder shells for now — filled in during Milestones 2 and 4.</td></tr>
+  <tr><td class="file">Vite build setup</td><td>The tool that packages all our source files into the final <code>dist/</code> folder Chrome actually loads.</td></tr>
+</table>
+
+<h2>How it works (a bit more detail)</h2>
+<p>When you drop a file, the import page reads it as raw bytes (<code>file.arrayBuffer()</code>), hands those bytes to <code>postal-mime</code>, and gets back a structured object: <code>from</code>, <code>to</code>, <code>subject</code>, <code>date</code>, an HTML body, a plain-text body, and a list of attachments (each with its filename, type, and size). We then show a readable summary plus the raw JSON so we can confirm parsing is correct before we trust it.</p>
+<p>Why a separate "parse" step at all? Email files are surprisingly messy — multiple body formats, weird encodings, nested attachments. <code>postal-mime</code> is a well-tested library that handles that so we don't have to write fragile parsing ourselves.</p>
+
+<h3>Why a build tool (Vite)?</h3>
+<p>The parsing library is shipped as modern JavaScript modules. Chrome extensions need everything packaged a specific way, so Vite + the CRXJS plugin bundles our code and rewrites file paths into a clean <code>dist/</code> folder. We load <em>that</em> folder into Chrome, not our raw source.</p>
+
+<h2>Proof it works</h2>
+<ul>
+  <li><strong>Automated test passes:</strong> a unit test feeds a sample multipart email through the parser and confirms it extracts the subject, sender, and both body formats. (<code>npm test</code> → 2 passed.)</li>
+  <li><strong>Production build succeeds:</strong> <code>npm run build</code> produces a complete <code>dist/</code> with the manifest, all three pages, and the parser bundle.</li>
+</ul>
+
+<h2>What is NOT done yet (on purpose)</h2>
+<ul>
+  <li>No nice rendering of the email body — that's Milestone 2, along with the security sandbox.</li>
+  <li>No saving emails / no opening them in a dedicated viewer tab yet.</li>
+  <li>No inline images or attachment previews — Milestones 3 and 4.</li>
+  <li>Icons are plain blue placeholder squares for now.</li>
+</ul>
+
+<div class="check">
+  <h3 style="margin-top:0">✅ Your 2-minute check in Chrome</h3>
+  <ol>
+    <li>Open Chrome → <code>chrome://extensions</code> → turn on <strong>Developer mode</strong> (top-right).</li>
+    <li>Click <strong>Load unpacked</strong> and select the <span class="file">dist/</span> folder in the project.</li>
+    <li>Click the extension's icon in the toolbar — the <strong>Import page</strong> should open in a new tab.</li>
+    <li>Drag the file <span class="file">samples/basic.eml</span> onto the drop zone (or click to pick it).</li>
+    <li>You should see: subject "Welcome to the EML Viewer test", the From/To/Cc, "Has HTML body: true", "Attachments: 0", and a JSON panel.</li>
+  </ol>
+  <p style="margin-bottom:0">If that all shows up, Milestone 1 is confirmed and we move to Milestone 2 (secure rendering in a sandboxed viewer tab).</p>
+</div>
+
+<h2>One thing we fixed behind the scenes</h2>
+<p>Your machine is behind a corporate network that inspects secure traffic, which initially blocked <code>npm</code> from downloading anything (a certificate-trust error). We pointed npm at the macOS system certificate store, which contains your company's trusted certificate, and saved that setting so it won't recur. We also had to approve one install script that Node 26 blocks by default. Nothing to do on your end — just noting it.</p>
+
+<div class="footer">PlatformEQ EML Viewer · Milestone 1 of 4 · generated 2026-06-17</div>
+
+</body>
+</html>

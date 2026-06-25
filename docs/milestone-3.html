@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Milestone 3 — EML Viewer</title>
+<style>
+  @page { margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1c2430; line-height: 1.55; font-size: 11.5pt; margin: 0; }
+  h1 { font-size: 23pt; margin: 0 0 2px; color: #16203a; }
+  .sub { color: #6b7585; margin: 0 0 22px; font-size: 11pt; }
+  h2 { font-size: 15pt; margin: 26px 0 8px; color: #16203a; border-bottom: 2px solid #e6e9ef; padding-bottom: 4px; }
+  h3 { font-size: 12pt; margin: 16px 0 4px; }
+  p { margin: 0 0 10px; }
+  code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 9.8pt; background: #eef1f6; padding: 1px 4px; border-radius: 4px; }
+  .plain { background: #f0f6ff; border: 1px solid #cfe0ff; border-radius: 10px; padding: 14px 18px; margin: 14px 0; }
+  .plain h2 { border: 0; margin-top: 0; color: #1d4ed8; }
+  ul, ol { margin: 4px 0 12px; padding-left: 20px; }
+  li { margin: 3px 0; }
+  .tag { display: inline-block; background: #1a7f4b; color: #fff; font-size: 9pt; padding: 2px 9px; border-radius: 999px; vertical-align: middle; }
+  .file { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 9.6pt; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 10pt; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #e6e9ef; vertical-align: top; }
+  th { color: #6b7585; font-weight: 600; }
+  .check { background: #fffbe9; border: 1px solid #f0e2a8; border-radius: 10px; padding: 14px 18px; margin: 14px 0; }
+  .ok { color: #1a7f4b; font-weight: 600; }
+  .footer { margin-top: 28px; color: #9aa4b2; font-size: 9pt; border-top: 1px solid #e6e9ef; padding-top: 8px; }
+</style>
+</head>
+<body>
+
+<h1>Milestone 3 &nbsp;<span class="tag">DONE</span></h1>
+<p class="sub">EML Viewer Chrome Extension · Inline Images + Attachment List</p>
+
+<div class="plain">
+  <h2>In plain English</h2>
+  <p>Emails now look like emails. The two visible additions:</p>
+  <ul>
+    <li><strong>Embedded images show up.</strong> Company logos and signature graphics that used to appear as broken-image icons now render properly.</li>
+    <li><strong>Attachments are listed.</strong> Real attachments (a PDF, a spreadsheet, a <code>note.txt</code>) appear as a tidy list at the top of the email, with their type and size.</li>
+  </ul>
+  <p>And it all still happens with <strong>zero internet access</strong> — the images are pulled out of the email file itself, not downloaded from anywhere.</p>
+</div>
+
+<h2>How embedded images work (the "cid:" trick)</h2>
+<p>When a company puts a logo in an email, the image isn't typed into the HTML — it's shipped as a <em>separate part</em> of the email file and the HTML just points to it with a label, like <code>&lt;img src="cid:logo@acme"&gt;</code>. "CID" means <strong>Content-ID</strong> — an internal reference, not a web address.</p>
+<p>A normal browser has no idea what <code>cid:logo@acme</code> means, so it shows a broken image. Our fix: during import we find each embedded part, convert its raw bytes into a <strong>self-contained <code>data:</code> URL</strong> (the image encoded directly as text), and swap every <code>cid:</code> reference for that. The result is a body that carries its own images inside it — nothing to fetch, so nothing can leak out.</p>
+
+<h3>Order matters: resolve, then sanitize</h3>
+<p>We resolve the <code>cid:</code> images <em>first</em>, then run the safety sanitizer. That ordering is deliberate: the sanitizer is configured to keep <code>data:</code> images, so the resolved logos survive the cleaning pass. We handle images referenced three ways — in <code>&lt;img&gt;</code> tags, in inline <code>style="background:url(...)"</code>, and inside <code>&lt;style&gt;</code> blocks.</p>
+
+<h2>Inline images vs. attachments</h2>
+<p>One subtlety: a logo is technically an "attachment" too, but you don't want your signature graphic cluttering the attachment list. So we tag each part: if it's referenced inline in the body (has a Content-ID or is marked "inline"), it shows <strong>in the body only</strong>. Everything else (the real PDF, the spreadsheet) shows <strong>in the attachment list</strong>. The test email demonstrates both at once — an inline logo and a separate <code>note.txt</code>.</p>
+
+<h2>What we built this milestone</h2>
+<table>
+  <tr><th>File</th><th>Role</th></tr>
+  <tr><td class="file">cid-resolver.js</td><td>Finds inline parts, encodes them as <code>data:</code> URLs, rewrites <code>cid:</code> references in tags, style attributes, and style blocks.</td></tr>
+  <tr><td class="file">import.js</td><td>Pipeline now: parse → <strong>resolve cid</strong> → sanitize → save. Also tags which parts are inline.</td></tr>
+  <tr><td class="file">viewer page</td><td>New attachment list (filename · type · size) above the body, showing only non-inline attachments.</td></tr>
+</table>
+
+<h2>Proof it works (automated)</h2>
+<ul>
+  <li><strong>20 unit tests pass</strong> (up from 11). New tests cover Content-ID normalization (brackets, case), <code>&lt;img&gt;</code> and CSS <code>url(cid:)</code> rewriting, and leaving unknown references alone.</li>
+  <li><strong>Real end-to-end test:</strong> the actual <span class="file">inline-image.eml</span> and <span class="file">malicious.eml</span> sample files are run through the genuine parse → resolve → sanitize pipeline, confirming the logo becomes a <code>data:</code> image, the <code>note.txt</code> stays a separate attachment, and the malicious one is still neutralized.</li>
+</ul>
+
+<div class="check">
+  <h3 style="margin-top:0">✅ Your check in Chrome (~2 minutes)</h3>
+  <ol>
+    <li><code>chrome://extensions</code> → <strong>reload</strong> the EML Viewer.</li>
+    <li>Click the icon → drop <span class="file">samples/inline-image.eml</span>. <span class="ok">Expect:</span>
+      <ul>
+        <li>A <strong>blue square logo renders</strong> in the body (no broken-image icon).</li>
+        <li>An <strong>"Attachments (1)"</strong> list appears above the body showing <code>note.txt</code> with its type and size.</li>
+      </ul>
+    </li>
+    <li>(Re-check) Drop <span class="file">samples/basic.eml</span> — still reads cleanly, no attachment list (it has none).</li>
+  </ol>
+  <p style="margin-bottom:0">If the logo shows and <code>note.txt</code> is listed, Milestone 3 is confirmed. Final stretch: <strong>Milestone 4</strong> — clicking an attachment to preview (images/PDF) or download, plus error states and polish.</p>
+</div>
+
+<h2>Known gaps until next milestone</h2>
+<ul>
+  <li>Attachments are <strong>listed but not yet clickable</strong> — opening/previewing/downloading them is Milestone 4.</li>
+  <li>No PDF or image preview tabs yet (Milestone 4).</li>
+  <li>Very large inline images make the stored body bigger (data: URLs add ~33%); fine within the 50&nbsp;MB file cap, noted for later optimization.</li>
+</ul>
+
+<div class="footer">PlatformEQ EML Viewer · Milestone 3 of 4 · generated 2026-06-17</div>
+
+</body>
+</html>

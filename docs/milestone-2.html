@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Milestone 2 — EML Viewer</title>
+<style>
+  @page { margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1c2430; line-height: 1.55; font-size: 11.5pt; margin: 0; }
+  h1 { font-size: 23pt; margin: 0 0 2px; color: #16203a; }
+  .sub { color: #6b7585; margin: 0 0 22px; font-size: 11pt; }
+  h2 { font-size: 15pt; margin: 26px 0 8px; color: #16203a; border-bottom: 2px solid #e6e9ef; padding-bottom: 4px; }
+  h3 { font-size: 12pt; margin: 16px 0 4px; }
+  p { margin: 0 0 10px; }
+  code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 9.8pt; background: #eef1f6; padding: 1px 4px; border-radius: 4px; }
+  .plain { background: #f0f6ff; border: 1px solid #cfe0ff; border-radius: 10px; padding: 14px 18px; margin: 14px 0; }
+  .plain h2 { border: 0; margin-top: 0; color: #1d4ed8; }
+  ul, ol { margin: 4px 0 12px; padding-left: 20px; }
+  li { margin: 3px 0; }
+  .tag { display: inline-block; background: #1a7f4b; color: #fff; font-size: 9pt; padding: 2px 9px; border-radius: 999px; vertical-align: middle; }
+  .file { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 9.6pt; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 10pt; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #e6e9ef; vertical-align: top; }
+  th { color: #6b7585; font-weight: 600; }
+  .check { background: #fffbe9; border: 1px solid #f0e2a8; border-radius: 10px; padding: 14px 18px; margin: 14px 0; }
+  .danger { color: #c0392b; font-weight: 600; }
+  .ok { color: #1a7f4b; font-weight: 600; }
+  .footer { margin-top: 28px; color: #9aa4b2; font-size: 9pt; border-top: 1px solid #e6e9ef; padding-top: 8px; }
+</style>
+</head>
+<body>
+
+<h1>Milestone 2 &nbsp;<span class="tag">DONE</span></h1>
+<p class="sub">EML Viewer Chrome Extension · Secure Rendering + Viewer Tab + Local Storage</p>
+
+<div class="plain">
+  <h2>In plain English</h2>
+  <p>This is the big one. The extension now <strong>actually shows you the email</strong> — opening it in its own clean reader tab with the subject, sender, recipients and date up top and the email body below.</p>
+  <p>But the headline isn't "it displays email" — it's "it displays email <strong>safely</strong>." Emails can contain hostile code (hidden scripts, spy pixels that phone home, fake links). We built the email body to render inside a <strong>locked glass box</strong>: you can see and read everything, but nothing inside can run code, reach the internet, or touch the rest of your browser. We also made the extension <strong>forget every email when you close Chrome</strong>.</p>
+</div>
+
+<h2>The "locked glass box" — how the safety actually works</h2>
+<p>The email body is shown inside a <strong>sandboxed iframe</strong> — a web feature that runs content with permissions stripped away. Think of it as a sealed display case. We deliberately leave <em>three</em> locks on and open <em>one small door</em>:</p>
+<table>
+  <tr><th>Setting</th><th>Effect (plain English)</th></tr>
+  <tr><td>No script permission</td><td><span class="ok">JavaScript in the email cannot run.</span> A hidden <code>&lt;script&gt;</code> or an <code>onerror</code> trick simply does nothing.</td></tr>
+  <tr><td>No same-origin</td><td>The email is treated as a stranger from nowhere — it <span class="ok">can't read your cookies, your storage, or reach into the extension.</span></td></tr>
+  <tr><td>No network (CSP + no permissions)</td><td>The extension asked for <span class="ok">zero internet access</span>, and the box has its own rule allowing only inline images. <span class="ok">Tracking pixels can't load</span>, so senders can't tell you opened the mail.</td></tr>
+  <tr><td>Popups allowed to escape ✅</td><td>The one open door: clicking a <strong>normal link opens it in a real new tab</strong> (with no back-reference to the email), so the viewer stays usable.</td></tr>
+</table>
+<p>On top of that, before an email is ever stored we run it through a <strong>sanitizer</strong> that strips out scripts, click-handlers, and <code>javascript:</code> links. That's a second layer — a belt to go with the sandbox's suspenders. The sandbox is what actually guarantees safety; the sanitizer just cleans up and reduces what the box ever has to contain.</p>
+
+<h2>Where emails live (and when they disappear)</h2>
+<p>When you open an email, the extension saves it on your machine in the browser's built-in database (<strong>IndexedDB</strong>) and opens the viewer tab pointing at it. Nothing leaves your computer.</p>
+<p><strong>The privacy promise:</strong> a small "registry" of open emails is kept in <em>session</em> storage, which Chrome erases the moment you fully quit the browser. The database itself isn't auto-erased by Chrome — so on every startup our background script <strong>compares the database against the registry and deletes anything orphaned</strong>. After a restart the registry is empty, so all previously-opened emails get wiped. There's also a 12-hour expiry as a backstop. This is what makes "emails vanish when you close Chrome" actually true rather than just a claim.</p>
+
+<h2>What we built this milestone</h2>
+<table>
+  <tr><th>File</th><th>Role</th></tr>
+  <tr><td class="file">sanitize-html.js</td><td>Zero-dependency cleaner: parses the HTML into a tree, removes scripts / event handlers / unsafe links, re-serializes. Never uses fragile text find-and-replace.</td></tr>
+  <tr><td class="file">storage.js</td><td>Reads/writes emails + attachments to IndexedDB, with delete-everything-for-an-email support.</td></tr>
+  <tr><td class="file">mail-session.js</td><td>The session registry of open emails (clears on browser close).</td></tr>
+  <tr><td class="file">viewer page</td><td>The reader tab: header block + the sandboxed body iframe.</td></tr>
+  <tr><td class="file">service-worker.js</td><td>Now also runs the startup reconciliation / 12-hour prune.</td></tr>
+  <tr><td class="file">import page</td><td>Rewired: parse → sanitize → save → open the viewer tab.</td></tr>
+</table>
+
+<h2>Proof it works (automated)</h2>
+<ul>
+  <li><strong>11 unit tests pass.</strong> The sanitizer is tested against scripts, <code>onerror</code> handlers, <code>javascript:</code> links, whitespace-obfuscated schemes (<code>java&#9;script:</code>), iframes/objects/embeds, and form actions — plus it confirms safe things (https + <code>cid:</code> + <code>data:</code> images) are preserved.</li>
+  <li><strong>Build succeeds</strong> and the critical <code>sandbox="allow-popups allow-popups-to-escape-sandbox"</code> attribute survives the build untouched.</li>
+</ul>
+<p>The one thing automated tests <em>can't</em> prove is the browser actually enforcing the sandbox — that's a Chrome guarantee, and it's exactly what your manual check below confirms.</p>
+
+<div class="check">
+  <h3 style="margin-top:0">✅ Your check in Chrome (~3 minutes)</h3>
+  <ol>
+    <li>Go to <code>chrome://extensions</code> and click the <strong>reload</strong> icon on the EML Viewer (it picks up the new build). If you hadn't loaded it: <strong>Load unpacked</strong> → the <span class="file">dist/</span> folder.</li>
+    <li>Click the toolbar icon → drop <span class="file">samples/basic.eml</span>. <span class="ok">Expect:</span> a clean reader tab — subject, From/To/Cc/Date, and the formatted HTML body. Click the "example.com" link → it should open in a <strong>new tab</strong>.</li>
+    <li>Go back to the import tab (or reopen via the icon) and drop <span class="file">samples/malicious.eml</span>. This is the security test. <span class="ok">Expect ALL of:</span>
+      <ul>
+        <li><span class="danger">No</span> alert popup appears, and the tab title does <span class="danger">not</span> change to "PWNED" (the script and <code>onerror</code> were blocked).</li>
+        <li>The tracking pixel shows as a <strong>broken image</strong> (it could not phone home).</li>
+        <li>The "normal link" <strong>opens a new tab</strong>; the "javascript: link" <strong>does nothing</strong>.</li>
+      </ul>
+    </li>
+    <li><strong>Privacy check (optional but satisfying):</strong> fully <strong>quit Chrome</strong>, reopen it, and click the extension icon. Your previously-opened emails should be gone (the reconciliation wiped them). <em>Note: this needs the extension to have been loaded before quitting; loading unpacked persists across restarts.</em></li>
+  </ol>
+  <p style="margin-bottom:0">If the malicious sample stays silent and the basic one reads nicely, Milestone 2 is confirmed. Next: <strong>Milestone 3</strong> — inline images (logos/signatures) and the attachment list.</p>
+</div>
+
+<h2>Known gaps until next milestone</h2>
+<ul>
+  <li><strong>Inline images won't show yet.</strong> Emails embed logos using <code>cid:</code> references; resolving those to viewable images is Milestone 3. Until then they'll appear broken — expected.</li>
+  <li><strong>No attachment list yet</strong> in the viewer (attachments <em>are</em> already being saved). That UI is Milestone 3; previews/downloads are Milestone 4.</li>
+</ul>
+
+<div class="footer">PlatformEQ EML Viewer · Milestone 2 of 4 · generated 2026-06-17</div>
+
+</body>
+</html>

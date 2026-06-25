@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Attachment — PlatformEQ EML Viewer</title>
+    <link rel="stylesheet" href="../../styles/shared.css" />
+    <link rel="stylesheet" href="./attachment.css" />
+  </head>
+  <body>
+    <div class="att">
+      <header id="bar" class="att__bar" hidden>
+        <div class="att__info">
+          <span id="att-name" class="att__name"></span>
+          <span id="att-meta" class="att__meta"></span>
+        </div>
+        <a id="download" class="btn" download>Download</a>
+      </header>
+
+      <div id="error" class="status" data-kind="error" hidden></div>
+
+      <main id="preview" class="att__preview"></main>
+    </div>
+
+    <script type="module" src="./attachment.js"></script>
+  </body>
+</html>

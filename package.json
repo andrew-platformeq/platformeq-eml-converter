@@ -1,0 +1,28 @@
+{
+  "name": "platformeq-eml-viewer",
+  "version": "0.1.0",
+  "description": "Private local .eml file viewer (Chrome MV3 extension)",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "package": "vite build && bash scripts/package.sh",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "postal-mime": "^2.4.4"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.0.0-beta.34",
+    "jsdom": "^25.0.1",
+    "vite": "^6.3.6",
+    "vitest": "^2.1.9"
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true,
+    "esbuild@0.21.5": true
+  }
+}

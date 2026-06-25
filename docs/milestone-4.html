@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Milestone 4 — EML Viewer</title>
+<style>
+  @page { margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1c2430; line-height: 1.55; font-size: 11.5pt; margin: 0; }
+  h1 { font-size: 23pt; margin: 0 0 2px; color: #16203a; }
+  .sub { color: #6b7585; margin: 0 0 22px; font-size: 11pt; }
+  h2 { font-size: 15pt; margin: 26px 0 8px; color: #16203a; border-bottom: 2px solid #e6e9ef; padding-bottom: 4px; }
+  h3 { font-size: 12pt; margin: 16px 0 4px; }
+  p { margin: 0 0 10px; }
+  code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 9.8pt; background: #eef1f6; padding: 1px 4px; border-radius: 4px; }
+  .plain { background: #f0f6ff; border: 1px solid #cfe0ff; border-radius: 10px; padding: 14px 18px; margin: 14px 0; }
+  .plain h2 { border: 0; margin-top: 0; color: #1d4ed8; }
+  .done { background: #eefaf3; border: 1px solid #b6e6cd; border-radius: 10px; padding: 14px 18px; margin: 14px 0; }
+  .done h2 { border: 0; margin-top: 0; color: #1a7f4b; }
+  ul, ol { margin: 4px 0 12px; padding-left: 20px; }
+  li { margin: 3px 0; }
+  .tag { display: inline-block; background: #1a7f4b; color: #fff; font-size: 9pt; padding: 2px 9px; border-radius: 999px; vertical-align: middle; }
+  .file { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 9.6pt; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 10pt; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #e6e9ef; vertical-align: top; }
+  th { color: #6b7585; font-weight: 600; }
+  .check { background: #fffbe9; border: 1px solid #f0e2a8; border-radius: 10px; padding: 14px 18px; margin: 14px 0; }
+  .ok { color: #1a7f4b; font-weight: 600; }
+  .footer { margin-top: 28px; color: #9aa4b2; font-size: 9pt; border-top: 1px solid #e6e9ef; padding-top: 8px; }
+</style>
+</head>
+<body>
+
+<h1>Milestone 4 &nbsp;<span class="tag">DONE</span></h1>
+<p class="sub">EML Viewer Chrome Extension · Attachment Previews + Polish + Team Handoff</p>
+
+<div class="plain">
+  <h2>In plain English</h2>
+  <p>The last pieces. Attachments are now <strong>clickable</strong>: click one and it opens in its own tab — <strong>images show as images</strong>, <strong>PDFs open in a real PDF viewer</strong>, and anything else gives you a <strong>Download</strong> button. We also added the finishing touches (a loading spinner, an "Open another file" button, friendly error messages) and packaged everything so it can be <strong>handed to the team and installed</strong>.</p>
+  <p>This completes the project. The extension does what it set out to do: open <code>.eml</code> files safely and privately, with no internet access.</p>
+</div>
+
+<h2>How attachment opening works</h2>
+<p>Clicking an attachment in the list opens a new tab that loads the file <em>from the local database</em> (never the network) and decides how to show it:</p>
+<table>
+  <tr><th>File type</th><th>What happens</th></tr>
+  <tr><td>Images (PNG, JPG, GIF…)</td><td>Shown inline, scaled to fit, with a Download button.</td></tr>
+  <tr><td>PDF</td><td>Rendered by <strong>Chrome's built-in PDF viewer</strong> inside the tab, plus a Download button.</td></tr>
+  <tr><td>Everything else</td><td>Filename + size + a <strong>Download</strong> button (no preview).</td></tr>
+</table>
+<p><strong>A design decision worth noting:</strong> we originally planned to show PDFs inside the locked sandbox, but a fully locked sandbox blocks the PDF plugin — it would show nothing. Since attachments are <em>your own team's files</em> (trusted, unlike email body HTML), we show the PDF in a normal frame on the extension's own page, which lets Chrome's native viewer work. The file is loaded as a temporary in-memory link that's released when you close the tab.</p>
+
+<h2>Polish added</h2>
+<ul>
+  <li><strong>Loading spinner</strong> while a file is parsed and saved.</li>
+  <li><strong>"Open another file"</strong> button in the reader tab, so you don't have to go back to the icon.</li>
+  <li><strong>Friendly error messages</strong> for: wrong file type, file too big (50&nbsp;MB cap), corrupt/unparseable email, an attachment or email that's no longer available, and emails with no readable body.</li>
+</ul>
+
+<h2>What we built this milestone</h2>
+<table>
+  <tr><th>File</th><th>Role</th></tr>
+  <tr><td class="file">preview.js</td><td>Decides image / pdf / download for a given file type (unit-tested).</td></tr>
+  <tr><td class="file">attachment page</td><td>The preview tab: header with name/size/Download, then inline image or native PDF or a "no preview" message.</td></tr>
+  <tr><td class="file">viewer page</td><td>Attachment list items are now buttons that open the preview tab; added the toolbar.</td></tr>
+  <tr><td class="file">HANDOFF.md</td><td>Build + install guide (load-unpacked and enterprise force-install).</td></tr>
+  <tr><td class="file">scripts/package.sh</td><td><code>npm run package</code> → builds and zips the extension for distribution.</td></tr>
+</table>
+
+<h2>Proof it works (automated)</h2>
+<ul>
+  <li><strong>26 unit + integration tests pass</strong> (up from 20). New: the preview router, plus real parsing of a <strong>PDF attachment</strong>, a <strong>nested forwarded email</strong> (<code>message/rfc822</code>), and an <strong>empty-body</strong> email.</li>
+  <li><strong>Packaging verified:</strong> <code>npm run package</code> produces <span class="file">platformeq-eml-viewer.zip</span> with a clean layout (manifest at the root, one icons folder, no duplicates).</li>
+</ul>
+
+<div class="check">
+  <h3 style="margin-top:0">✅ Your final check in Chrome (~4 minutes)</h3>
+  <ol>
+    <li><code>chrome://extensions</code> → <strong>reload</strong> the EML Viewer.</li>
+    <li>Drop <span class="file">samples/with-pdf.eml</span> → click <strong>report.pdf</strong> in the list → it opens in a new tab and the <span class="ok">PDF renders</span>. The <strong>Download</strong> button saves it.</li>
+    <li>Drop <span class="file">samples/inline-image.eml</span> → click <strong>note.txt</strong> → new tab shows name/size and a <strong>Download</strong> button (no preview, as expected).</li>
+    <li>Drop <span class="file">samples/nested.eml</span> → <strong>forwarded.eml</strong> is listed and downloads.</li>
+    <li>Drop <span class="file">samples/empty-body.eml</span> → opens with a tidy "no readable body" note (no crash).</li>
+    <li>In a reader tab, click <strong>"Open another file"</strong> → the import page opens.</li>
+  </ol>
+  <p style="margin-bottom:0">If those all behave, the project is complete and ready to package for the team.</p>
+</div>
+
+<div class="done">
+  <h2>🎉 Project complete — what you can do now</h2>
+  <ul>
+    <li><strong>Use it:</strong> load <span class="file">dist/</span> unpacked (see <span class="file">HANDOFF.md</span>).</li>
+    <li><strong>Share it:</strong> <code>npm run package</code> → send <span class="file">platformeq-eml-viewer.zip</span>, or have IT force-install it (steps in <span class="file">HANDOFF.md</span>).</li>
+  </ul>
+</div>
+
+<h2>Out of scope (possible follow-ups)</h2>
+<ul>
+  <li>Reply / forward / search across emails; a persistent mailbox history.</li>
+  <li><code>.msg</code> (Outlook binary) support.</li>
+  <li>Dark mode / theming.</li>
+  <li>Optimizing very large inline images (currently stored as text-encoded data URLs).</li>
+</ul>
+
+<div class="footer">PlatformEQ EML Viewer · Milestone 4 of 4 · project complete · generated 2026-06-17</div>
+
+</body>
+</html>

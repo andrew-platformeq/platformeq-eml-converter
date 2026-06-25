@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Telemetry Debug — EML Viewer</title>
+    <link rel="stylesheet" href="../../styles/shared.css" />
+    <link rel="stylesheet" href="./telemetry.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="page__header">
+        <h1>Telemetry debug</h1>
+        <p id="telemetry-mode" class="muted">Loading…</p>
+        <p class="muted">
+          <a id="back-import" href="#">← Back to import</a>
+        </p>
+      </header>
+
+      <dl id="telemetry-summary" class="summary"></dl>
+
+      <div class="debug__actions">
+        <button type="button" id="telemetry-refresh">Refresh</button>
+        <button type="button" id="telemetry-flush" hidden>Flush now</button>
+        <button type="button" id="telemetry-clear">Clear queue</button>
+      </div>
+      <p id="telemetry-flush-status" class="flush-status" hidden></p>
+
+      <pre id="telemetry-json" class="json">[]</pre>
+    </main>
+
+    <script type="module" src="./telemetry.js"></script>
+  </body>
+</html>

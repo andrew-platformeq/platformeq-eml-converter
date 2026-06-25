@@ -1,0 +1,28 @@
+From: Mallory <mallory@example.com>
+To: You <you@example.com>
+Subject: [TEST] script + tracking pixel + link
+Date: Tue, 17 Jun 2026 12:00:00 +0000
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+
+<html>
+  <body>
+    <h1>Security test email</h1>
+    <p>If you can read this and NOTHING popped up, the sandbox works.</p>
+
+    <!-- 1. Inline script: must NOT execute -->
+    <script>document.title = 'PWNED'; alert('script ran');</script>
+
+    <!-- 2. Event-handler XSS: must NOT execute -->
+    <img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" onerror="alert('onerror ran')">
+
+    <!-- 3. Tracking pixel on an external host: must NOT load (broken image) -->
+    <img src="https://tracker.example.com/pixel.gif?uid=12345" width="1" height="1" alt="tracking pixel">
+
+    <!-- 4. Normal link: SHOULD open in a new tab when clicked -->
+    <p><a href="https://example.com/">This is a normal link — clicking should open a new tab.</a></p>
+
+    <!-- 5. javascript: link: must be neutralized -->
+    <p><a href="javascript:alert('js link')">This javascript: link should do nothing.</a></p>
+  </body>
+</html>

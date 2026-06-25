@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Epic Paste Test — what does a copy/paste deliver?</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0; background: #f6f7f9; color: #1c2430; }
+  header { padding: 16px 24px; background: #16203a; color: #fff; }
+  header h1 { margin: 0 0 4px; font-size: 1.15rem; }
+  header p { margin: 0; font-size: 0.85rem; color: #aeb8cc; }
+  .wrap { padding: 20px 24px; max-width: 1000px; margin: 0 auto; }
+  #zone {
+    border: 3px dashed #9aa4b2; border-radius: 14px; background: #fff;
+    padding: 44px 24px; text-align: center; transition: all .12s; cursor: text;
+  }
+  #zone.hot { border-color: #2f6df6; background: #eef3ff; }
+  #zone h2 { margin: 0 0 6px; }
+  #zone p { margin: 0; color: #6b7585; }
+  .events { font-size: .8rem; color: #6b7585; margin: 10px 0 0; }
+  .events b { color: #1a7f4b; }
+  .controls { margin: 16px 0; }
+  button { font: inherit; padding: 8px 14px; border: 1px solid #d9dde3; border-radius: 8px;
+    background: #fff; cursor: pointer; margin-right: 8px; }
+  pre { background: #0f1320; color: #d6e0f0; padding: 16px; border-radius: 12px;
+    overflow: auto; font-size: .82rem; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+  .hint { background: #fffbe9; border: 1px solid #f0e2a8; border-radius: 10px; padding: 12px 16px; font-size: .9rem; }
+  code { background: #eef1f6; padding: 1px 5px; border-radius: 4px; font-size: .85em; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Epic Paste Test</h1>
+  <p>Copy an email in Epic, click the box, and paste (Ctrl/Cmd-V). This page reports exactly what the clipboard delivered — it does not upload or save anything.</p>
+</header>
+
+<div class="wrap">
+  <div class="hint">
+    Open this in the <b>same Chrome</b> the extension would run in. In Epic, select the email (or open the message and Select All), <b>Copy</b>, then come here, <b>click the box</b>, and press <b>Ctrl/Cmd-V</b>. Clipboard redirection usually survives VDI even when drag is blocked.
+  </div>
+
+  <div id="zone" contenteditable="true" tabindex="0">
+    <h2>📋 Click here, then paste (Ctrl/Cmd-V)</h2>
+    <p>(or copy a normal email from anywhere first, to see what a working paste looks like)</p>
+    <p class="events"><span>paste events: <b id="c-paste">0</b></span></p>
+  </div>
+
+  <div class="controls">
+    <button id="clear">Clear log</button>
+    <button id="copy">Copy log</button>
+  </div>
+
+  <pre id="log">No paste yet. Waiting…</pre>
+</div>
+
+<script>
+const logEl = document.getElementById('log');
+const zone = document.getElementById('zone');
+let buffer = '';
+let pasteCount = 0;
+
+function out(line = '') { buffer += line + '\n'; logEl.textContent = buffer; }
+
+zone.addEventListener('focus', () => zone.classList.add('hot'));
+zone.addEventListener('blur', () => zone.classList.remove('hot'));
+
+// Capture paste anywhere on the page (works whether or not the box has focus).
+document.addEventListener('paste', async (e) => {
+  e.preventDefault();
+  pasteCount++;
+  document.getElementById('c-paste').textContent = pasteCount;
+
+  const cd = e.clipboardData;
+  buffer = '';
+  out('===== PASTE at ' + new Date().toLocaleTimeString() + ' =====');
+  if (!cd) { out('No clipboardData available (blocked).'); return; }
+
+  out('clipboardData.types: ' + JSON.stringify(Array.from(cd.types || [])));
+  out('');
+
+  // Files on the clipboard (e.g. a copied .eml or image)
+  out('--- FILES (clipboardData.files: ' + (cd.files ? cd.files.length : 0) + ') ---');
+  if (!cd.files || cd.files.length === 0) out('(none)');
+  if (cd.files) {
+    for (const f of cd.files) {
+      out(`  • name="${f.name}"  type="${f.type || '(empty)'}"  size=${f.size} bytes`);
+      try { out('    first 300 chars: ' + (await f.slice(0, 300).text()).replace(/\n/g, ' ')); } catch (_) {}
+    }
+  }
+  out('');
+
+  // Named formats
+  out('--- getData() for common formats ---');
+  for (const fmt of ['text/plain', 'text/html', 'text/rtf', 'text/uri-list', 'URL']) {
+    let v = '';
+    try { v = cd.getData(fmt); } catch (_) {}
+    if (v) {
+      out(`  ${fmt} (${v.length} chars):`);
+      out('    ' + v.slice(0, 800).replace(/\n/g, '\n    '));
+      out('');
+    }
+  }
+
+  // Verdict
+  out('--- WHAT THIS MEANS ---');
+  const types = Array.from(cd.types || []);
+  const html = (() => { try { return cd.getData('text/html'); } catch (_) { return ''; } })();
+  const text = (() => { try { return cd.getData('text/plain'); } catch (_) { return ''; } })();
+  if (cd.files && cd.files.length > 0) {
+    out('✓ A FILE came through the clipboard — we can ingest it exactly like a dropped file.');
+  } else if (html) {
+    out('✓ HTML content came through. We can render it directly (sanitize + display).');
+    out('  Note: inline images/attachments may be missing or reference remote URLs.');
+    if (/^(from|to|subject|date|received):/im.test(text)) {
+      out('  ALSO: the plain text looks like raw .eml headers — we may be able to fully parse it.');
+    }
+  } else if (text) {
+    if (/^(from|to|subject|date|received):/im.test(text)) {
+      out('✓ The clipboard holds raw .eml-looking text (has headers). We can parse it as an email.');
+    } else {
+      out('• Only plain message text came through — we can show it, but formatting/attachments will be lost.');
+    }
+  } else {
+    out('✗ Nothing usable. If types is empty, clipboard redirection is also locked down in this VDI.');
+    out('  Next option: have Epic "Save As" the .eml to a redirected drive and use the file picker,');
+    out('  or run the extension inside the VDI session where Epic lives.');
+  }
+});
+
+document.getElementById('clear').addEventListener('click', () => { buffer = ''; out('Cleared. Waiting…'); });
+document.getElementById('copy').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(buffer); } catch (_) {}
+});
+</script>
+</body>
+</html>

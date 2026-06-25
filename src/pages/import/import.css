@@ -1,0 +1,55 @@
+.dropzone {
+  margin: 24px 0;
+  padding: 48px 24px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.dropzone:hover,
+.dropzone:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+.dropzone--active {
+  border-color: var(--accent);
+  background: #eef3ff;
+}
+.dropzone__title { font-size: 1.2rem; margin: 0 0 4px; }
+
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex: none;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.status {
+  min-height: 1.4em;
+  font-size: 0.95rem;
+}
+.status[data-kind="error"] { color: var(--error); }
+.status[data-kind="success"] { color: var(--success); }
+
+.import__footer {
+  margin-top: 32px;
+  text-align: center;
+}
+.import__debug-link {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.import__debug-link:hover {
+  color: var(--accent);
+}
