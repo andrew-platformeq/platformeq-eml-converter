@@ -1,16 +1,20 @@
 # PlatformEQ EML Viewer — Internal Install Guide
 
-A private Chrome extension for viewing `.eml` email files locally. **Email
-content is never sent over the network** — the extension has no `host_permissions`
-for browsing or fetching remote URLs, and opened emails are wiped when you fully
-quit Chrome.
+A private Chrome extension for viewing `.eml` and Outlook `.msg` email files
+locally. **Email content is never sent over the network** — the extension has no
+`host_permissions` for browsing or fetching remote URLs, and opened emails are
+wiped when you fully quit Chrome.
 
 **Usage telemetry (Phase A):** the extension records *how* the tool is used (not
 email content) into a local queue on the device. Nothing is transmitted until
 Phase B enables a scoped GCP ingest endpoint. See [Usage telemetry](#usage-telemetry)
 below.
 
-> Not published to the Chrome Web Store — this is for internal team use only.
+> Published on the Chrome Web Store (unlisted/internal):  
+> https://chromewebstore.google.com/detail/dfhaanhlejilnnkbpabpdffhnecfhoam  
+> For a new release: bump `manifest.json` version, `npm run package`, upload zip in the
+> [Developer Dashboard](https://chrome.google.com/webstore/devconsole). Listing copy:
+> `docs/chrome-web-store-listing.md`.
 
 ---
 
@@ -42,7 +46,7 @@ npm run package    # builds dist/ and produces platformeq-eml-viewer.zip
    (or unzip `platformeq-eml-viewer.zip` and select the unzipped folder).
 4. Pin the **PlatformEQ EML Viewer** icon to the toolbar.
 
-To use: click the icon → drop a `.eml` file → it opens in a reader tab.
+To use: click the icon → drop a `.eml` or `.msg` file → it opens in a reader tab.
 
 To update: rebuild, then click the **reload** ↻ icon on the extension card.
 
@@ -115,11 +119,12 @@ network location** reachable from local Chrome. Verify:
 
 | | |
 |---|---|
-| ✅ Reads `.eml` (and `.txt`/`.mht`) locally | ❌ No `.msg` (Outlook binary) — out of scope |
+| ✅ Reads `.eml` and Outlook `.msg` (and `.txt`/`.mht`) locally | ❌ No `.msg` → `.eml` conversion export |
 | ✅ Renders HTML safely in a locked sandbox | ❌ No reply / forward / search |
 | ✅ Inline images, attachment preview/download | ❌ No remote/cloud fetch for email content |
-| ✅ Forgets emails on browser close | ❌ Not on the Chrome Web Store |
+| ✅ Forgets emails on browser close | ❌ No reply / forward / search |
 | ✅ Local usage telemetry queue (Phase A) | ❌ Email subject/body/filenames never logged |
+| ✅ Email to myself (Workspace Gmail → same address) | ❌ No send to other recipients |
 
 ---
 
@@ -193,10 +198,14 @@ extension via MDM force-install (Option B above).
 
 ### Inspecting the queue locally (QA)
 
+The telemetry debug page is not linked from the import screen (store builds).
+QA opens it by direct URL only:
+
 1. Rebuild and reload the extension from `dist/`.
-2. Open the telemetry debug page:
-   - Import page → **Open telemetry debug** (footer link), or
-   - `chrome-extension://<extension-id>/src/pages/debug/telemetry.html`
+2. Copy the extension ID from `chrome://extensions`.
+3. Open:
+   `chrome-extension://<extension-id>/src/pages/debug/telemetry.html`
+   (bookmark this URL for repeat use — the ID is stable after Chrome Web Store publish.)
 3. Use the tool in another tab; click **Refresh** on the debug page to see queued JSON.
 4. Confirm the Network tab shows **no outbound requests** (Phase A).
 

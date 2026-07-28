@@ -16,7 +16,7 @@ export const MAIL_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
 export const MAX_FILE_BYTES = 50 * 1024 * 1024; // 50 MB
 
 // Accepted file extensions for the import picker / drop zone.
-export const ACCEPTED_EXTENSIONS = ['.eml', '.txt', '.mht', '.mhtml'];
+export const ACCEPTED_EXTENSIONS = ['.eml', '.msg', '.txt', '.mht', '.mhtml'];
 
 // Attachment MIME types we preview inline (everything else downloads).
 export const PREVIEW_IMAGE = /^image\//;

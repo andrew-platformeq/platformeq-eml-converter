@@ -1,7 +1,7 @@
 {
   "name": "platformeq-eml-viewer",
-  "version": "0.1.0",
-  "description": "Private local .eml file viewer (Chrome MV3 extension)",
+  "version": "0.3.4",
+  "description": "Private local .eml / .msg file viewer (Chrome MV3 extension)",
   "type": "module",
   "private": true,
   "scripts": {
@@ -10,9 +10,12 @@
     "package": "vite build && bash scripts/package.sh",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "docs:user-manual": "bash -c 'test -x .venv-pdf/bin/python || (python3 -m venv .venv-pdf && .venv-pdf/bin/pip install -q reportlab); .venv-pdf/bin/python scripts/generate-user-manual.py'"
   },
   "dependencies": {
+    "@kenjiuno/decompressrtf": "^0.1.4",
+    "@kenjiuno/msgreader-web-ng": "^0.2.0-alpha1",
     "postal-mime": "^2.4.4"
   },
   "devDependencies": {

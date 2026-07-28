@@ -41,15 +41,3 @@
 }
 .status[data-kind="error"] { color: var(--error); }
 .status[data-kind="success"] { color: var(--success); }
-
-.import__footer {
-  margin-top: 32px;
-  text-align: center;
-}
-.import__debug-link {
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-.import__debug-link:hover {
-  color: var(--accent);
-}

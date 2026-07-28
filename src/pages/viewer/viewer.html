@@ -11,7 +11,12 @@
     <main class="viewer">
       <div class="toolbar">
         <span class="toolbar__brand">EML Viewer</span>
-        <button id="open-another" type="button" class="toolbar__btn">Open another file</button>
+        <div class="toolbar__actions">
+          <button id="email-to-self" type="button" class="toolbar__btn toolbar__btn--primary" hidden>
+            Email to myself
+          </button>
+          <button id="open-another" type="button" class="toolbar__btn">Open another file</button>
+        </div>
       </div>
 
       <header id="meta" class="meta" hidden>
