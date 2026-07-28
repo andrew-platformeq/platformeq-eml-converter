@@ -2,26 +2,53 @@ import { defineConfig, loadEnv } from 'vite';
 import { crx } from '@crxjs/vite-plugin';
 import manifest from './manifest.json' with { type: 'json' };
 
-/** Phase B: inject host_permissions + alarms when VITE_TELEMETRY_URL is set at build time. */
+/**
+ * Build-time manifest enrichment:
+ * - VITE_TELEMETRY_URL → host_permissions + alarms
+ * - VITE_GOOGLE_OAUTH_CLIENT_ID → oauth2 (gmail.send) + Google API host_permissions
+ */
 function buildManifest(mode) {
   const env = loadEnv(mode, process.cwd(), '');
-  const url = env.VITE_TELEMETRY_URL;
-  if (!url) return manifest;
+  let next = { ...manifest, permissions: [...manifest.permissions] };
+  const hostPermissions = new Set(manifest.host_permissions || []);
 
-  try {
-    const origin = new URL(url).origin;
-    const permissions = manifest.permissions.includes('alarms')
-      ? manifest.permissions
-      : [...manifest.permissions, 'alarms'];
-    return {
-      ...manifest,
-      permissions,
-      host_permissions: [`${origin}/*`],
-    };
-  } catch {
-    console.warn('[eml-viewer] invalid VITE_TELEMETRY_URL — skipping host_permissions');
-    return manifest;
+  const telemetryUrl = env.VITE_TELEMETRY_URL;
+  if (telemetryUrl) {
+    try {
+      hostPermissions.add(`${new URL(telemetryUrl).origin}/*`);
+      if (!next.permissions.includes('alarms')) {
+        next.permissions = [...next.permissions, 'alarms'];
+      }
+    } catch {
+      console.warn('[eml-viewer] invalid VITE_TELEMETRY_URL — skipping host_permissions');
+    }
   }
+
+  const clientId = (env.VITE_GOOGLE_OAUTH_CLIENT_ID || '').trim();
+  if (clientId) {
+    next = {
+      ...next,
+      oauth2: {
+        client_id: clientId,
+        scopes: ['https://www.googleapis.com/auth/gmail.send'],
+      },
+    };
+    // gmail.googleapis.com is a different host than www.googleapis.com
+    hostPermissions.add('https://www.googleapis.com/*');
+    hostPermissions.add('https://gmail.googleapis.com/*');
+    hostPermissions.add('https://accounts.google.com/*');
+    hostPermissions.add('https://oauth2.googleapis.com/*');
+  } else {
+    console.warn(
+      '[eml-viewer] VITE_GOOGLE_OAUTH_CLIENT_ID unset — Email to myself will be disabled in this build'
+    );
+  }
+
+  if (hostPermissions.size > 0) {
+    next.host_permissions = [...hostPermissions];
+  }
+
+  return next;
 }
 
 // @crxjs/vite-plugin reads manifest.json, discovers the HTML pages it references

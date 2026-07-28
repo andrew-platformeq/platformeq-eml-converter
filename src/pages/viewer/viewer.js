@@ -1,5 +1,6 @@
 import { getMail, getAttachments } from '../../lib/storage.js';
 import { track, attachmentCountBucket, deriveBodyType } from '../../lib/telemetry.js';
+import { isEmailToSelfConfigured, sendEmailToSelf } from '../../lib/email-to-self.js';
 
 const metaEl = document.getElementById('meta');
 const subjectEl = document.getElementById('meta-subject');
@@ -13,6 +14,10 @@ const iframe = document.getElementById('email-body');
 const attSection = document.getElementById('attachments');
 const attCount = document.getElementById('att-count');
 const attList = document.getElementById('att-list');
+const emailToSelfBtn = document.getElementById('email-to-self');
+
+/** @type {{ mail: object, attachments: Array } | null} */
+let current = null;
 
 function showError(message) {
   errorEl.textContent = message;
@@ -117,11 +122,62 @@ function renderAttachments(attachments, mailId) {
   attSection.hidden = false;
 }
 
+function setEmailToSelfBusy(busy, label) {
+  emailToSelfBtn.disabled = busy;
+  emailToSelfBtn.textContent = label;
+}
+
+function classifySendError(err) {
+  const msg = String(err?.message || '').toLowerCase();
+  if (msg.includes('cancelled') || msg.includes('canceled')) return 'auth_cancelled';
+  if (msg.includes('not configured')) return 'not_configured';
+  if (msg.includes('too large')) return 'too_large';
+  if (msg.includes('sign into chrome') || msg.includes('workspace gmail')) return 'no_identity';
+  if (msg.includes('401') || msg.includes('auth')) return 'auth_error';
+  return 'send_error';
+}
+
+async function onEmailToSelf() {
+  if (!current) return;
+  errorEl.hidden = true;
+  setEmailToSelfBusy(true, 'Sending…');
+  try {
+    const result = await sendEmailToSelf(current.mail, current.attachments);
+    track('email_to_self_sent', {
+      attachment_count_bucket: attachmentCountBucket(result.attachmentCount),
+      body_type: deriveBodyType({
+        hasHtml: current.mail.hasHtml,
+        text: current.mail.text,
+      }),
+    });
+    setEmailToSelfBusy(false, 'Sent ✓');
+    emailToSelfBtn.title = `Sent to ${result.email}`;
+    setTimeout(() => {
+      setEmailToSelfBusy(false, 'Email to myself');
+      emailToSelfBtn.title =
+        'Send this email (with attachments) to your Workspace Gmail only';
+    }, 2500);
+  } catch (err) {
+    console.error('Email to myself failed', err);
+    track('email_to_self_failed', { error_code: classifySendError(err) });
+    setEmailToSelfBusy(false, 'Email to myself');
+    showError(err.message || 'Could not send email to yourself.');
+  }
+}
+
 document.getElementById('open-another').addEventListener('click', () => {
   chrome.tabs.create({ url: chrome.runtime.getURL('src/pages/import/import.html') });
 });
 
+emailToSelfBtn.addEventListener('click', onEmailToSelf);
+
 async function main() {
+  if (isEmailToSelfConfigured()) {
+    emailToSelfBtn.hidden = false;
+    emailToSelfBtn.title =
+      'Send this email (with attachments) to your Workspace Gmail only';
+  }
+
   const mailId = new URLSearchParams(location.search).get('mailId');
   if (!mailId) {
     showError('No email specified (missing mailId).');
@@ -136,6 +192,7 @@ async function main() {
     renderMeta(mail);
     renderBody(mail);
     const attachments = await getAttachments(mailId);
+    current = { mail, attachments };
     const listed = attachments.filter((a) => !a.inline);
     track('viewer_opened', {
       body_type: deriveBodyType({ hasHtml: mail.hasHtml, text: mail.text }),

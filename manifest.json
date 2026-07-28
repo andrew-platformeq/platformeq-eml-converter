@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
   "name": "PlatformEQ EML Viewer",
-  "version": "0.1.0",
-  "description": "Private local .eml file viewer",
+  "version": "0.3.4",
+  "description": "Private local .eml and Outlook .msg file viewer",
   "permissions": ["storage", "identity", "identity.email"],
   "action": {
-    "default_title": "Open EML Viewer",
+    "default_title": "Open EML / MSG Viewer",
     "default_icon": {
       "16": "icons/icon-16.png",
       "48": "icons/icon-48.png"

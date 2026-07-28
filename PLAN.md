@@ -395,7 +395,6 @@ Linked from the import page footer. No network in Phase A.
 ## Out of Scope (v1)
 
 - Reply/forward, search across emails, persistent mailbox history
-- `.msg` (Outlook binary) format
 - Remote/cloud EML fetch (would violate zero-network constraint for **email content**)
 - Telemetry network flush before GCP ingest is provisioned (Phase B)
 - Dark mode / theming (easy follow-up)

@@ -93,6 +93,8 @@ Email bodies remain in IndexedDB (`eml-viewer`) — separate from telemetry.
 | `import_succeeded` | Saved + viewer opened | `parse_ms`, `body_type`, `attachment_count_bucket`, `inline_image_count`, `has_pdf`, `content_fingerprint` |
 | `import_failed` | Parse/storage error | `error_code`, `content_fingerprint` (if bytes were read) |
 | `viewer_opened` | Viewer loads | `body_type`, `attachment_count_bucket` |
+| `email_to_self_sent` | Gmail send-to-self succeeded | `attachment_count_bucket`, `body_type` |
+| `email_to_self_failed` | Gmail send-to-self failed | `error_code` |
 | `attachment_opened` | Attachment tab loads | `preview_type`, `mime_category` |
 | `attachment_downloaded` | Download clicked | `mime_category` |
 
@@ -143,11 +145,11 @@ Email bodies remain in IndexedDB (`eml-viewer`) — separate from telemetry.
 
 1. `npm run build`
 2. Reload extension at `chrome://extensions` from `dist/`
-3. Open debug page:
+3. Open debug page (direct URL only — not linked from the import screen):
    ```
    chrome-extension://<extension-id>/src/pages/debug/telemetry.html
    ```
-   Or: import page → **Open telemetry debug** (footer link)
+   Extension ID is on `chrome://extensions`.
 4. Use the tool; click **Refresh** on the debug page
 5. DevTools → **Network**: confirm **no outbound requests** (Phase A)
 6. Import the same `.eml` twice → same `content_fingerprint` on both runs

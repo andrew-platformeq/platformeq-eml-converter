@@ -1,4 +1,5 @@
-import { parseEml, summarizeEml } from '../../lib/parse-eml.js';
+import { summarizeEml } from '../../lib/parse-eml.js';
+import { parseMail } from '../../lib/parse-mail.js';
 import { resolveCidImages } from '../../lib/cid-resolver.js';
 import { sanitizeHtml } from '../../lib/sanitize-html.js';
 import { saveMailWithAttachments } from '../../lib/storage.js';
@@ -91,7 +92,7 @@ async function handleFile(file, method) {
 
     let email;
     try {
-      email = await parseEml(buffer);
+      email = await parseMail(buffer, file.name);
     } catch (err) {
       track('import_failed', { error_code: 'parse_error', content_fingerprint: contentFingerprint });
       failureTracked = true;
@@ -162,7 +163,7 @@ async function handleFile(file, method) {
         ...(contentFingerprint ? { content_fingerprint: contentFingerprint } : {}),
       });
     }
-    console.error('Failed to import EML', err);
+    console.error('Failed to import mail', err);
     setStatus(`Could not open "${file.name}": ${err.message}`, 'error');
   } finally {
     setBusy(false);
@@ -200,7 +201,3 @@ dropzone.addEventListener('drop', (e) => {
   const file = e.dataTransfer?.files?.[0];
   handleFile(file, 'drop');
 });
-
-document.getElementById('telemetry-debug-link').href = chrome.runtime.getURL(
-  'src/pages/debug/telemetry.html'
-);
